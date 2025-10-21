@@ -3,19 +3,19 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
   isConnected = false;
-  address = "http://127.0.0.1:8888";
+  address = "http://127.0.0.1:3001";
   status = "not connected";
 
+  // Configuration de Socket.IO
   socketIO.setup(address);
   /*
-   * You can also pass a query parameter at connection if needed.
+   * Vous pouvez aussi passer un paramètre de requête lors de la connexion si nécessaire.
    */
   // std::map<std::string,std::string> query;
   // query["token"] = "hello";
   // socketIO.setup(address, query);
 
   ofAddListener(socketIO.notifyEvent, this, &ofApp::gotEvent);
-
   ofAddListener(socketIO.connectionEvent, this, &ofApp::onConnection);
 }
 
@@ -79,8 +79,11 @@ void ofApp::onServerEvent (ofxSocketIOData& data) {
 }
 
 void ofApp::onArrayEvent (ofxSocketIOData& data) {
-    for (auto line : data.getVector()) {
-        ofLogNotice("ofxSocketIO", line->get_string());
+    for (const auto& line : data.getVector()) {
+        // Deux façons équivalentes d'accéder à la chaîne de caractères
+        ofLogNotice("ofxSocketIO", *line); // Déréférencement du pointeur pour accéder au string
+        // ou
+        // ofLogNotice("ofxSocketIO", line->c_str()); // Utiliser la méthode c_str() du std::string
     }
 
   std::string who = "tina";

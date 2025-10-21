@@ -1,80 +1,101 @@
 #include "ofxSocketIOData.h"
 
-ofxSocketIOData::ofxSocketIOData () {}
+// Constructeur par défaut
+ofxSocketIOData::ofxSocketIOData() : _data(nullptr) {
+}
+
+// Constructeur avec données
+ofxSocketIOData::ofxSocketIOData(sio::message::ptr const& data) : _data(data) {
+}
 
 void ofxSocketIOData::setData(sio::message::ptr const& data) {
   _data = data;
 }
 
-std::vector<std::shared_ptr<sio::message>>& ofxSocketIOData::getVector() {
+void ofxSocketIOData::setNullData() {
+  _data = nullptr;
+}
+
+std::vector<std::shared_ptr<sio::message>>& ofxSocketIOData::getRawVector() {
   return _data->get_vector();
 }
 
-void ofxSocketIOData::setNullData () {
-  _data = NULL;
-}
-
-/*
- * Would be awesome to use templates here
- */
-std::string ofxSocketIOData::getStringValue(std::string key) {
-  std::string result;
-  if (_data) {
-    result = _data->get_map()[key]->get_string();
-  } else {
-    result = "";
+std::vector<std::shared_ptr<std::string>> ofxSocketIOData::getVector() const {
+  std::vector<std::shared_ptr<std::string>> result;
+  
+  if (!_data || _data->get_flag() != sio::message::flag_array) {
+      return result;
   }
+  
+  const auto& array = _data->get_vector();
+  for (const auto& element : array) {
+      if (element->get_flag() == sio::message::flag_string) {
+          result.push_back(std::make_shared<std::string>(element->get_string()));
+      }
+  }
+  
   return result;
 }
 
-int ofxSocketIOData::getIntValue(std::string key) {
-  int result;
-  if (_data) {
-    result = _data->get_map()[key]->get_int();
-  } else {
-    result = NULL;
+std::string ofxSocketIOData::getStringValue(std::string const& key) const {
+  if (!_data || !_data->get_map().count(key) || _data->get_map().at(key)->get_flag() != sio::message::flag_string) {
+      return "";
   }
-  return result;
+  return _data->get_map().at(key)->get_string();
 }
 
-float ofxSocketIOData::getFloatValue(std::string key) {
-  double result;
-  if (_data) {
-    result = (float) _data->get_map()[key]->get_double();
-  } else {
-    result = NULL;
+int ofxSocketIOData::getIntValue(std::string const& key) const {
+  if (!_data || !_data->get_map().count(key) || 
+      (_data->get_map().at(key)->get_flag() != sio::message::flag_integer &&
+       _data->get_map().at(key)->get_flag() != sio::message::flag_double)) {
+      return 0;
   }
-  return result;
+  
+  if (_data->get_map().at(key)->get_flag() == sio::message::flag_integer) {
+      return _data->get_map().at(key)->get_int();
+  } else {
+      return static_cast<int>(_data->get_map().at(key)->get_double());
+  }
 }
 
-double ofxSocketIOData::getDoubleValue(std::string key) {
-  double result;
-  if (_data) {
-    result = _data->get_map()[key]->get_double();
-  } else {
-    result = NULL;
+float ofxSocketIOData::getFloatValue(std::string const& key) const {
+  if (!_data || !_data->get_map().count(key) || 
+      (_data->get_map().at(key)->get_flag() != sio::message::flag_integer &&
+       _data->get_map().at(key)->get_flag() != sio::message::flag_double)) {
+      return 0.0f;
   }
-  return result;
+  
+  if (_data->get_map().at(key)->get_flag() == sio::message::flag_double) {
+      return static_cast<float>(_data->get_map().at(key)->get_double());
+  } else {
+      return static_cast<float>(_data->get_map().at(key)->get_int());
+  }
 }
 
-bool ofxSocketIOData::getBoolValue(std::string key) {
-  bool result;
-  if (_data) {
-    result = _data->get_map()[key]->get_bool();
-  } else {
-    result = NULL;
+double ofxSocketIOData::getDoubleValue(std::string const& key) const {
+  if (!_data || !_data->get_map().count(key) || 
+      (_data->get_map().at(key)->get_flag() != sio::message::flag_integer &&
+       _data->get_map().at(key)->get_flag() != sio::message::flag_double)) {
+      return 0.0;
   }
-  return result;
+  
+  if (_data->get_map().at(key)->get_flag() == sio::message::flag_double) {
+      return _data->get_map().at(key)->get_double();
+  } else {
+      return static_cast<double>(_data->get_map().at(key)->get_int());
+  }
 }
 
-ofxSocketIOData ofxSocketIOData::getNestedValue(std::string key) {
-  sio::message::ptr data;
-  ofxSocketIOData result;
-  if (_data) {
-    data = _data->get_map()[key];
-    result.setData(data);
-  } else {
-    result.setData(data);
+bool ofxSocketIOData::getBoolValue(std::string const& key) const {
+  if (!_data || !_data->get_map().count(key) || _data->get_map().at(key)->get_flag() != sio::message::flag_boolean) {
+      return false;
   }
-  return result;
+  return _data->get_map().at(key)->get_bool();
+}
+
+ofxSocketIOData ofxSocketIOData::getNestedValue(std::string const& key) const {
+  if (!_data || !_data->get_map().count(key) || _data->get_map().at(key)->get_flag() != sio::message::flag_object) {
+      return ofxSocketIOData();
+  }
+  return ofxSocketIOData(_data->get_map().at(key));
 }

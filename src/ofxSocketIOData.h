@@ -1,29 +1,27 @@
 #pragma once
 
 #include "ofMain.h"
-#if defined(_MSC_VER) || defined(_WIN32) || defined(WIN32) || defined(__MINGW32__)
-  // Windows stuff
-#else
-  // Linux and OSX here
-  #include <sio_client.h>
-#endif
+#include "sio_client.h"
+#include "sio_message.h"
 
 class ofxSocketIOData : public ofEventArgs {
-private :
+private:
   sio::message::ptr _data;
 
-public :
+public:
   ofxSocketIOData();
+  ofxSocketIOData(sio::message::ptr const& data);
 
-  void setData(sio::message::ptr const&);
+  void setData(sio::message::ptr const& data);
   void setNullData();
 
-  std::string getStringValue(std::string key);
-  int getIntValue(std::string key);
-  float getFloatValue(std::string key);
-  double getDoubleValue(std::string key);
-  bool getBoolValue(std::string key);
-  ofxSocketIOData getNestedValue(std::string key);
+  std::string getStringValue(std::string const& key) const;
+  int getIntValue(std::string const& key) const;
+  float getFloatValue(std::string const& key) const;
+  double getDoubleValue(std::string const& key) const;
+  bool getBoolValue(std::string const& key) const;
+  ofxSocketIOData getNestedValue(std::string const& key) const;
 
-  std::vector<std::shared_ptr<sio::message>>& getVector();
+  std::vector<std::shared_ptr<std::string>> getVector() const;
+  std::vector<std::shared_ptr<sio::message>>& getRawVector();
 };

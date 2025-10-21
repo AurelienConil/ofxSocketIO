@@ -2,45 +2,70 @@
 //  ofxSocketIO.h
 //
 //  Created by hugohil on 05/02/16.
-//
+//  Updated with modern Socket.IO Client C++ API
 //
 #pragma once
 
 #include "ofMain.h"
 #include "ofEvents.h"
-#if defined(_MSC_VER) || defined(_WIN32) || defined(WIN32) || defined(__MINGW32__)
-  // Windows stuff
-#else
-  // Linux and OSX here
-  #include <sio_client.h>
-#endif
-#include "ofxSocketIOData.h"
+#include "sio_client.h"
+#include "sio_message.h"
+#include "sio_socket.h"
+#include <functional>
+#include <map>
+#include <string>
+#include <mutex>
 
-class ofxSocketIO : protected ofThread {
-private :
-  sio::client client;
-  std::string currentStatus = "closed";
+// Forward declaration pour éviter l'inclusion circulaire
+class ofxSocketIOData;
+
+class ofxSocketIO {
+private:
+  sio::client _io;
+  std::mutex _mutex;
+  std::map<std::string, sio::socket::ptr> _sockets;
+  std::string _currentStatus;
 
   void onConnect();
   void onClose(sio::client::close_reason const& reason);
   void onFail();
   void onTryReconnect();
+  
+  // Helper pour obtenir ou créer un socket
+  sio::socket::ptr getSocketForNamespace(std::string const& nsp);
+  
+  // Implémentation réelle du binding d'événements
+  template<typename T>
+  void bindEventInternal(ofEvent<T>& event, std::string const& eventName, std::string const& nsp);
 
-public :
-  string getStatus();
+public:
+  ofxSocketIO();
+  ~ofxSocketIO();
 
-  void setup(std::string& address);
-  void setup(std::string& address, std::map<std::string,std::string>& query);
+  std::string getStatus() const;
 
-  void bindEvent(ofEvent<ofxSocketIOData&>& event, std::string eventName, std::string nsp="");
+  void setup(std::string const& address);
+  void setup(std::string const& address, std::map<std::string,std::string> const& query);
+
+  // Binding d'événements
+  template<typename T>
+  void bindEvent(ofEvent<T>& event, std::string const& eventName) {
+      bindEventInternal(event, eventName, "");
+  }
+  
+  template<typename T>
+  void bindEvent(ofEvent<T>& event, std::string const& eventName, std::string const& nsp) {
+      bindEventInternal(event, eventName, nsp);
+  }
 
   ofEvent<void> connectionEvent;
   ofEvent<std::string> notifyEvent;
 
-  void emit(std::string& eventName);
-  void emit(std::string& eventName, std::string& data, std::string nsp="");
-  void emitBinary(std::string& eventName, shared_ptr<string> const& bStr, std::string nsp="");
+  void emit(std::string const& eventName);
+  void emit(std::string const& eventName, std::string const& data);
+  void emit(std::string const& eventName, std::string const& data, std::string const& nsp);
+  void emitBinary(std::string const& eventName, std::shared_ptr<std::string> const& bStr, std::string nsp = "");
 
   void closeConnection();
-  void openConnection(std::string& address);
+  void openConnection(std::string const& address);
 };
