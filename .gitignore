@@ -80,6 +80,9 @@ Desktop.ini
 # Android
 .csettings
 
+# VSCode
+.vscode/
+
 # Node.js
 example/script/node_modules/**
 example/script/npm-debug.log
